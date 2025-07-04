@@ -3,3 +3,10 @@
 # This project is a 2D game inspired by the classic game Terraria
 # It features a procedurally generated world, player character, and various game mechanics
 # including mining, building, and combat (maybe)
+
+
+# initialize game 
+# run titlescreen, run worldgen, etc
+
+# gameloop
+# update world state, update player state, update inventory
