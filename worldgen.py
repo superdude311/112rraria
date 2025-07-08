@@ -1,12 +1,19 @@
 #112rraria
 # this code generates the world for the game, and is run once at the start of the game
 
+from perlin import *
+# import perlin noise functions from perlin.py
+import numpy as np
+
 # pseudocode mapping
 def terraingen():
     # generates terrain for the world
     # carson recommendation:use a numpy array and set the dtype to uint8 and use that for your big tile grid
     # uses perlin noise (so I can flex) to create terrain with caves and hills
-    return #2d array of terrain tiles
+
+    base_perlin = create_gradient()  # generates the base perlin noise gradient
+
+    return base_perlin #2d array of terrain tiles
 
 def ores():
     # generates ores in blobs in the world using a different random noise function

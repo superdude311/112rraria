@@ -3,14 +3,19 @@
 
 import numpy as np
 from cmu_graphics import *
+from perlin import *
 
+def onAppStart(app):
+    app.rows, app.cols = 200, 100
+    app.setMaxShapeCount(app.rows * app.cols)
+    app.testarray  = create_gradient()
+    app.color = rgb(int(app.testarray[i, j]), int(app.testarray[i, j]), int(app.testarray[i, j]))
+    print(app.testarray)
 
-rows, cols = 10, 20
-testarray  = np.random.randint(0, 256, size=(rows, cols), dtype=np.uint8)
-print(testarray)
-for i in range(rows):
-    for j in range(cols):
-        drawRect(rows, cols, 1, fill = rgb(testarray[i,j]))
+def redrawAll(app):
+    for i in range(app.rows):
+        for j in range(app.cols):
+            drawRect(i * 10, j * 10, 10, 10, fill = app.color)
 
-
+runApp(width = 2000, height = 1000)
 #draw black and white array to screen with x,y being testarray[y][x]
