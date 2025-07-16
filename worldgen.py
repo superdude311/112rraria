@@ -11,8 +11,8 @@ def terraingen():
     # carson recommendation:use a numpy array and set the dtype to uint8 and use that for your big tile grid
     # uses perlin noise (so I can flex) to create terrain with caves and hills
 
-    base_perlin = create_gradient()  # generates the base perlin noise gradient
-
+    base_perlin = sample_gradient()  # generates the base perlin noise gradient
+    #function to clip the terrain at some point
     return base_perlin #2d array of terrain tiles
 
 def ores():

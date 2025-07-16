@@ -21,15 +21,23 @@ def onAppStart(app):
     app.oby = app.sby + 25
     app.obw = 50
     app.obh = 25 #options btn w/h
+    app.ts_tag = True #title screen tag
+    app.o_tag = False #opts tag
+    app.c_tag = False #creds tag
+    app.bbx = 100 #back btn coords
 
 
 def redrawAll(app):
-    drawRect(app.sbx, app.sby, app.sbw, app.sbh, fill = 'lightGray', align = 'center')
-    drawRect(app.cbx, app.cby, app.cbw, app.cbh, fill = 'lightGray', align = 'center')
-    drawRect(app.obx, app.oby, app.obw, app.obh, fill = 'lightGray', align = 'center')
-    drawLabel("Start Game", app.sbx, app.sby, align = 'center')
-    drawLabel("Credits", app.cbx, app.cby, align = 'center')
-    drawLabel("Options", app.obx, app.oby, align = 'center')
+    if app.ts_tag:
+        drawRect(app.sbx, app.sby, app.sbw, app.sbh, fill = 'lightGray', align = 'center')
+        drawRect(app.cbx, app.cby, app.cbw, app.cbh, fill = 'lightGray', align = 'center')
+        drawRect(app.obx, app.oby, app.obw, app.obh, fill = 'lightGray', align = 'center')
+        drawLabel("Start Game", app.sbx, app.sby, align = 'center')
+        drawLabel("Credits", app.cbx, app.cby, align = 'center')
+        drawLabel("Options", app.obx, app.oby, align = 'center')
+    elif app.o_tag:
+        drawLabel("Options", 200, 75, size = 36)
+        drawRect()
     
 
 def in_button(app, mouseX, mouseY): #returns s, c, o depending on which button is pressed
@@ -42,6 +50,12 @@ def in_button(app, mouseX, mouseY): #returns s, c, o depending on which button i
     
 
 def onMousePress(app, mouseX, mouseY):
+    if in_button(app, mouseX, mouseY) == 's':
+        pass
+    elif in_button(app, mouseX, mouseY) == 'c':
+        pass
+    elif in_button(app, mouseX, mouseY) == 'o':
+        pass
     pass
 
 def onMouseMove(app, mouseX, mouseY):
