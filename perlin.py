@@ -1,4 +1,6 @@
 # generates the perlin noise map for the given size
+# found via https://www.cs.cmu.edu/~112/notes/student-tp-guides/Terrain.pdf
+# as this source said, this was "very hard" to implement
 # based on https://en.wikipedia.org/wiki/Perlin_noise
 # and original papers from Ken Perlin:
 # https://dl.acm.org/doi/pdf/10.1145/325165.325247
@@ -62,56 +64,45 @@ def create_gradient_point(i, j): #returns a "density" value of the noise at the 
     topright = vectorgrid[math.floor(i) + 1, math.floor(j)]
     botleft = vectorgrid[math.floor(i), math.floor(j) + 1]
     botright = vectorgrid[math.floor(i) + 1, math.floor(j) + 1]
-    # print(f"topleft: {topleft}, topright: {topright}, botleft: {botleft}, botright: {botright}")
 
     # calculates the distance (x, y) from each perlin grid corner to the current world point
     dv_topleft = dist_comp(math.floor(i), math.floor(j), i, j)
     dv_topright = dist_comp(math.floor(i) + 1, math.floor(j), i, j)
     dv_botleft = dist_comp(math.floor(i), math.floor(j) + 1, i, j)
     dv_botright = dist_comp(math.floor(i) + 1, math.floor(j) + 1, i, j)
-    # print(f"dv_topleft: {dv_topleft}, dv_topright: {dv_topright}, dv_botleft: {dv_botleft}, dv_botright: {dv_botright}")
 
     # calculates the dot product of the distance and the vector
     dot_topleft = dv_topleft[0] * topleft[0] + dv_topleft[1] * topleft[1]
     dot_topright = dv_topright[0] * topright[0] + dv_topright[1] * topright[1]
     dot_botleft = dv_botleft[0] * botleft[0] + dv_botleft[1] * botleft[1]
     dot_botright = dv_botright[0] * botright[0] + dv_botright[1] * botright[1]
-    # print(f"dot_topleft: {dot_topleft}, dot_topright: {dot_topright}, dot_botleft: {dot_botleft}, dot_botright: {dot_botright}")
 
     # interpolates the values using the smoothing function
     def interpolate(a, b, x):
         return b * smoothing_function(x) + a * (1 - smoothing_function(x))
-    
 
     x_interp_val = abs(i - math.floor(i))
-    
     i_top = interpolate(dot_topleft, dot_topright, x_interp_val)
-    i_bot = interpolate(dot_botleft, dot_botright, x_interp_val) #fill none with the correct x value
+    i_bot = interpolate(dot_botleft, dot_botright, x_interp_val)
+
     # sets the world grid value to the interpolated value
-
     y_interp_val = abs(j - math.floor(j))
-
     gradient_point = interpolate(i_top, i_bot, y_interp_val)
-    # print(f"x_interp_val: {x_interp_val}, y_interp_val: {y_interp_val}")
-    # print(f"i_top: {i_top}, i_bot: {i_bot}, interped pt: {gradient_point}")
     return gradient_point
 
 def sample_gradient(scale):
     worldgrid = np.empty((worldrows, worldcols))
-    print(worldrows, worldcols)
-    print(vectorgridrows, vectorgridcols)
     for i in range(worldrows):
         for j in range(worldcols):
             # sample the gradient at the given scale
             x = i / scale
             y = j / scale
-            worldgrid[i][j] = create_gradient_point(x, y)
+            worldgrid[i][j] = np.interp(create_gradient_point(x, y), (-1, 1), (0, 255))
+            # normalizes the values to 0-255 for drawing
     return worldgrid
 
 def main():
     world = sample_gradient(scale)
-    print(world)
-    # print(vectorgrid)
-    print(world.shape)
+    # print(world)
 main()
 # how the freaking heck does perlin actually work bro

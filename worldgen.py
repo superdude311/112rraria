@@ -12,19 +12,23 @@ def terraingen():
     # uses perlin noise (so I can flex) to create terrain with caves and hills
 
     base_perlin = sample_gradient()  # generates the base perlin noise gradient
-    #function to clip the terrain at some point
+    #function to cut off the terrain at some point above a certain height
+
     return base_perlin #2d array of terrain tiles
 
 def ores():
-    # generates ores in blobs in the world using a different random noise function
+    # generates ores in blobs in the world 
     # ores are generated inside rocks, with a chance to poke out into caves
     # ores get more common as the player goes deeper into the world
+
+    # probably could use perlin but with a really large scale, and only draw at a very high threshold
     return #2d array of ore tiles
 
 def water():
     # generates water bodies in the world
     # water is generated above certain depth, with a smaller chance to generate in caves
     # water (somehow) checks for terrain and flows down if able
+    # yeah i probably don't have time for this 
     return #2d array of water tiles
 
 def trees():
@@ -40,6 +44,7 @@ def worldgen():
     ores()
     water() 
     trees() #worst case i can get rid of trees
+    gamestate = 'title' #set game state to title screen after world generation is complete
     # initializes the game world
     
 
