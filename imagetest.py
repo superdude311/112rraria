@@ -6,7 +6,7 @@ from PIL import Image as Img
 from perlin import *
 
 def onAppStart(app):
-    app.world = sample_gradient(scale)
+    app.world = sample_2d_gradient(scale)
     app.rows, app.cols = worldrows, worldcols
     app.img = Img.fromarray(app.world)
     app.img = app.img.convert('RGB')
@@ -20,10 +20,9 @@ def redrawAll(app):
     drawLabel(f"step: {app.step}", app.width // 2, app.height // 2, size = 20, fill = 'black')
 
 def onStep(app):
-    app.img.close()  # close the previous image to avoid memory leaks
     app.step += 1
     if app.step % 2 == 0:
-        app.world = sample_gradient(scale)
+        app.world = sample_2d_gradient(scale)
         app.img = Img.fromarray(app.world)
         app.img = app.img.convert('RGB')
         app.img.save('test-png.png', format='PNG')

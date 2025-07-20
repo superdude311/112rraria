@@ -15,6 +15,23 @@ from cmu_graphics import *
 import math
 from worldsetup import *
 
+
+def smoothing_function(n):
+    # smoothing function for the perlin noise
+    # based on the new paper's smoothing function
+    return ((6 * n**5) - (15 * n**4) + (10 * n**3))
+
+# interpolates the values using the smoothing function
+def interpolate(a, b, x):
+    return b * smoothing_function(x) + a * (1 - smoothing_function(x))
+
+
+def dist_comp(x1, y1, x2, y2): #returns distance in component vector form (x, y)
+    x = x2 - x1
+    y = y2 - y1
+    return x, y 
+
+
 def generate_grid_point():
     # creates the unit vectors to use to generate the noise (source: updated paper)
     perlin_vectors = np.array([[1,1,0],[-1,1,0],[1,-1,0],[-1,-1,0],
@@ -28,15 +45,33 @@ def generate_grid_point():
     vector = perlin_vectors[np.random.randint(0, 16)] 
     return vector
 
-def smoothing_function(n):
-    # smoothing function for the perlin noise
-    # based on the new paper's smoothing function
-    return ((6 * n**5) - (15 * n**4) + (10 * n**3))
+def generate_1d_slopes():
+    slope = np.empty(worldcols)
+    for i in range(worldcols):
+        slope[i] = np.random.uniform(-1, 1)
+    return slope
 
-def dist_comp(x1, y1, x2, y2): #returns distance in component vector form (x, y)
-    x = x2 - x1
-    y = y2 - y1
-    return x, y 
+slope = generate_1d_slopes()
+
+def create_1d_gradient_point(i):
+    left_slope = slope[math.floor(i)]
+    right_slope = slope[math.floor(i) + 1]
+    left_dist = i - math.floor(i)
+    right_dist = i - (math.floor(i) + 1)
+    dot_left = left_slope * left_dist
+    dot_right = right_slope * right_dist
+    noise_point = interpolate(dot_left, dot_right, left_dist)
+    return noise_point
+
+def sample_1d_gradient(scale1d):
+    # generates a 1D gradient noise array
+    gradient = np.empty(worldrows)
+    for i in range(worldrows):
+        x = i / scale1d
+        raw = create_1d_gradient_point(x)
+        gradient[i] = np.interp(raw, (-1, 1), (worldrows - 35, worldrows - 5))
+        # normalizes the values to 0-255 for drawing
+    return gradient
 
 def generate_vectorgrid():
     gridrows, gridcols = vectorgridrows + 1, vectorgridcols + 1
@@ -52,7 +87,7 @@ def generate_vectorgrid():
 vectorgrid = generate_vectorgrid()
 
 
-def create_gradient_point(i, j): #returns a "density" value of the noise at the given point
+def create_2d_gradient_point(i, j): #returns a "density" value of the noise at the given point
     # this calculates the perlin noise grid square by square
     # while this is somewhat similar to 112craft (which in turn is pretty much the algorithm described in the paper), 
     # the implementation differs as this is a finite world game, so I could build this to a finite sized array
@@ -77,10 +112,6 @@ def create_gradient_point(i, j): #returns a "density" value of the noise at the 
     dot_botleft = dv_botleft[0] * botleft[0] + dv_botleft[1] * botleft[1]
     dot_botright = dv_botright[0] * botright[0] + dv_botright[1] * botright[1]
 
-    # interpolates the values using the smoothing function
-    def interpolate(a, b, x):
-        return b * smoothing_function(x) + a * (1 - smoothing_function(x))
-
     x_interp_val = abs(i - math.floor(i))
     i_top = interpolate(dot_topleft, dot_topright, x_interp_val)
     i_bot = interpolate(dot_botleft, dot_botright, x_interp_val)
@@ -90,19 +121,21 @@ def create_gradient_point(i, j): #returns a "density" value of the noise at the 
     gradient_point = interpolate(i_top, i_bot, y_interp_val)
     return gradient_point
 
-def sample_gradient(scale):
+def sample_2d_gradient(scale):
     worldgrid = np.empty((worldrows, worldcols))
     for i in range(worldrows):
         for j in range(worldcols):
             # sample the gradient at the given scale
             x = i / scale
             y = j / scale
-            worldgrid[i][j] = np.interp(create_gradient_point(x, y), (-1, 1), (0, 255))
+            raw = create_2d_gradient_point(x, y)
+            worldgrid[i][j] = np.interp(raw, (-1, 1), (0, 255))
             # normalizes the values to 0-255 for drawing
     return worldgrid
 
 def main():
-    world = sample_gradient(scale)
+    world = sample_2d_gradient(scale)
+    print(sample_1d_gradient(scale))
     # print(world)
 main()
 # how the freaking heck does perlin actually work bro
