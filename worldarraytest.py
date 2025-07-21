@@ -39,7 +39,7 @@ def redrawAll(app):
                 elif app.testarray[i][j] == 13: #gold
                     drawRect(100 + i * app.square_size, 100 + j * app.square_size, app.square_size, app.square_size, fill = rgb(231, 191, 4))
                 elif app.testarray[i][j] == 14: #silver
-                    drawRect(100 + i * app.square_size, 100 + j * app.square_size, app.square_size, app.square_size, fill = rgb(192, 192, 192))
+                    drawRect(100 + i * app.square_size, 100 + j * app.square_size, app.square_size, app.square_size, fill = rgb(230, 230, 230))
                 elif app.testarray[i][j] == 15: #lead
                     drawRect(100 + i * app.square_size, 100 + j * app.square_size, app.square_size, app.square_size, fill = rgb(46, 44, 148))
                 elif app.testarray[i][j] == 16: #palladium

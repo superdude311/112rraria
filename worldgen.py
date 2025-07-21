@@ -61,7 +61,8 @@ def ores(worldmap):
                 nx = x + dx
                 ny = y + dy
                 if 0 < nx < worldrows and 0 < ny < worldrows and world[nx][ny] == 3:
-                    world[nx][ny] = ore_id
+                    if random.randrange(1, 5) != 1:
+                        world[nx][ny] = ore_id
     
     def sprinkle_blobs(world):
         blobs_per_band = 25
@@ -77,9 +78,9 @@ def ores(worldmap):
                     paint_ore_blob(world, x, y, ore_IDs[ore], radius)
         return world
     
-    updated_world = sprinkle_blobs(terrain)
+    sprinkle_blobs(terrain)
     # probably could use perlin but with a really large scale, and only draw at a very high threshold
-    return updated_world #2d array of world, now including ore tiles
+    return terrain #2d array of world, now including ore tiles
 
 def water():
     # generates water bodies in the world
@@ -99,9 +100,11 @@ def trees():
 def worldgen():
     terrain = terraingen()
     ore_world = ores(terrain) #adds ores to the world
+    print(terrain.shape)
+    print(type(ore_world))
+    print("world created")
     # water() 
     # trees() #worst case i can get rid of trees
-    # gamestate = 'title' #set game state to title screen after world generation is complete
     # initializes the game world
     return ore_world  # returns the generated world array
     

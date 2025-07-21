@@ -15,14 +15,20 @@ from worldgen import *
 
 # initialize variables n things 
 def onAppStart(app):
+    app.setMaxShapeCount(20000)
+    app.step = 0
+    app.gamestate = gamestate
     app.stepsPerSecond = 60
     init_titlescreen(app) #initialize titlescreen variables
     init_world(app) #initialize world variables
     init_gamevars(app) #initialize game variables
+    app.tile_dict = {0:(255, 255, 255), 1:(0, 160, 0), 2:(160, 80, 0), 3:(160, 160, 160), 4:(0, 0, 0), 10:(184, 115, 51),
+                     11:(211, 212, 213), 12:(78, 79, 85), 13:(231, 191, 4), 14:(230, 230, 230), 15:(46, 44, 148), 16:(196, 26, 26),
+                     17:(28, 252, 159), 18:(28, 230, 252)}
 
 def init_world(app):
     app.stepsPerSecond = 1
-    app.world = []
+    create_world(app)
 
 def init_titlescreen(app): # put this in a diff function to avoid confusion with variables used for other things
     app.stepsPerSecond = 30
@@ -53,7 +59,7 @@ def init_titlescreen(app): # put this in a diff function to avoid confusion with
 def init_gamevars(app):
     app.stepsPerSecond = 60
     app.px = app.width // 2 #player x position
-    app.py = app.height // 2 #player y position
+    app.py = 300 #player y position
     app.vx = 0 #player x velocity
     app.vy = 0 #player y velocity
     app.ax = 0.5 #friction (x axis)
@@ -64,6 +70,8 @@ def init_gamevars(app):
     app.rflag = False #press right flag
     app.pw = 20
     app.ph = 40 #player width/height
+    app.camx, app.camy = app.px // tilesize, app.py // tilesize
+
 ##########################################################
 # initialize game                                        #   
 # generate world, show some kind of loading indicator    #
@@ -71,11 +79,7 @@ def init_gamevars(app):
 
 def create_world(app):
     app.world = worldgen()
-
-def draw_loading(app):
-    drawRect(0, 0, app.width, app.height, fill = 'black')
-    drawLabel("Generating World...", app.width // 2, app.height // 2, size = 36, fill = 'white')
-
+    app.gamestate = 'title'
 
 ###################
 # run titlescreen #
@@ -96,10 +100,10 @@ def draw_titlescreen(app):
     elif app.o_tag:
         drawImage(app.options_img, app.width // 2, app.height // 2, width = 1200, height = 800, align = 'center', opacity = 85)
         drawLabel("Options (and how to play)", app.width / 2, 75, size = 36)
-        drawLabel("Press the up arrow or space to jump", app.width // 2, 100, size = 24)
-        drawLabel("Press left/right arrow or a/d to move", app.width // 2, 125, size = 24)
-        drawLabel("Left click with item in hand to place", app.width // 2, 150, size = 24)
-        drawLabel("Left click with tool in hand to break", app.width // 2, 175, size = 24)
+        drawLabel("Press the up arrow or space to jump", app.width // 2, 125, size = 24)
+        drawLabel("Press left/right arrow or a/d to move", app.width // 2, 150, size = 24)
+        drawLabel("Left click with item in hand to place", app.width // 2, 175, size = 24)
+        drawLabel("Left click with tool in hand to break", app.width // 2, 200, size = 24)
         drawRect(app.bbx, app.bby, app.bbw, app.bbh, fill = 'lightGray', align = 'center')
         drawLabel("Back", app.bbx, app.bby, align = 'center')
     elif app.c_tag:
@@ -132,7 +136,7 @@ def in_ts_button(app, mouseX, mouseY): #returns s, c, o depending on which butto
 def ts_button_press(app, mouseX, mouseY):
     if in_ts_button(app, mouseX, mouseY) == 's':
         print("Start Game Pressed")
-        gamestate = 'game'
+        app.gamestate = 'game'
     elif in_ts_button(app, mouseX, mouseY) == 'c':
         app.c_tag = True
         app.ts_tag = False
@@ -170,39 +174,65 @@ def ts_button_bounce(app, mouseX, mouseY):
 #############################################################
 
 # probably can just call a function from a different file?
-def draw_game(app):
-    drawRect(app.px, app.py, app.pw, app.ph, fill = 'blue') #draw player
 
-def step_handler(app):
-    pass
+def draw_tile(app, tile, i, j):
+    x = (i - app.camx) * tilesize + app.width // 2
+    y = (j - app.camy) * tilesize + app.height // 2
+    drawRect(x, y, x + tilesize, y + tilesize, fill = rgb(*app.tile_dict[tile]))
+
+def draw_game(app):
+    if not isinstance(app.world, np.ndarray):
+        print("not an array")
+        return
+    drawRect(app.px, app.py, app.pw, app.ph, fill = 'blue') #draw player
+    tiles_onscreen_x = app.width // tilesize
+    tiles_onscreen_y = app.height // tilesize
+    start_x = int(app.camx - (tiles_onscreen_x // 2))
+    end_x = int(app.camx + (tiles_onscreen_x // 2) + 1)
+    start_y = int(app.camy - (tiles_onscreen_y // 2))
+    end_y = int(app.camy + (tiles_onscreen_y // 2) + 1)
+    print(tiles_onscreen_x, tiles_onscreen_y, start_x, start_y, end_x, end_y)
+    for i in range(start_x, end_x):
+        for j in range(start_y, end_y):
+            if 0 <= i < worldcols and 0 <= j < worldrows:
+                tile = app.world[i][j]
+                draw_tile(app, tile, i, j)
 
 ######################################
 # general MVC functions for the game #
 ######################################
 
 def redrawAll(app):
-    if gamestate == 'worldgen':
-        draw_loading(app)
-    elif gamestate == 'title':
-        draw_titlescreen(app)
-    elif gamestate == 'game':
-        draw_loading(app)
+    if app.gamestate == 'worldgen':
         pass
+    elif app.gamestate == 'title':
+        draw_titlescreen(app)
+    elif app.gamestate == 'game':
+        draw_game(app)
+        
 
 def onMousePress(app, mouseX, mouseY):
-    if gamestate == 'title':
+    if app.gamestate == 'title':
         ts_button_press(app, mouseX, mouseY)
-    elif gamestate == 'worldgen':
+    elif app.gamestate == 'worldgen':
         pass
-    elif gamestate == 'game':
+    elif app.gamestate == 'game':
         pass
 
 def onMouseMove(app, mouseX, mouseY):
-    if gamestate == 'title':
+    if app.gamestate == 'title':
         ts_button_bounce(app, mouseX, mouseY)
-    elif gamestate == 'worldgen':
+    elif app.gamestate == 'worldgen':
         pass
-    elif gamestate == 'game':
+    elif app.gamestate == 'game':
         pass
+
+def onStep(app):
+    app.step += 1
+    app.px += 1
+    
+    if app.gamestate == 'game':
+        app.camx = app.px // tilesize
+        app.camy = app.py // tilesize
 
 runApp(width = 1200, height = 800)
