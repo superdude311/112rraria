@@ -6,7 +6,7 @@
 
 # titlescreen logo generated with Terraria Logo Maker: https://terraria-logo-maker.darthmorf.co.uk/
 # titlescreen background image created by MiltVala: https://forums.terraria.org/index.php?threads/terraria-desktop-wallpapers.12644/
-
+# sprites found from spriters-resource.com: https://www.spriters-resource.com/pc_computer/terraria/sheet/131821/
 
 from cmu_graphics import *
 from worldsetup import *
@@ -62,15 +62,16 @@ def init_gamevars(app):
     app.py = 300 #player y position
     app.vx = 0 #player x velocity
     app.vy = 0 #player y velocity
-    app.ax = 0.5 #friction (x axis)
+    app.ax = 5 #friction (x axis)
     app.grav = -0.5 #gravity
     app.vxcap = 10  #velocity cap (x)
     app.vycap = 15 #velocity cap (y)
     app.lflag = False #press left flag
     app.rflag = False #press right flag
-    app.pw = 20
-    app.ph = 40 #player width/height
+    app.pw = tilesize
+    app.ph = tilesize * 2 #player width/height
     app.camx, app.camy = app.px // tilesize, app.py // tilesize
+    app.grounded = False
 
 ##########################################################
 # initialize game                                        #   
@@ -114,7 +115,7 @@ def draw_titlescreen(app):
         drawLabel("Asset sources:", app.width / 2, 250, size = 18)
         drawLabel("Logo: Terraria Logo Maker by DarthMorf", app.width / 2, 275, size = 16)
         drawLabel("Backgrounds: MiltVala on Terraria Forums", app.width / 2, 300, size = 16)
-        drawLabel("Other assets: Likely from Terraria source code, unless otherwise stated", app.width / 2, 325, size = 16)
+        drawLabel("Sprites: Spriters-resource.com", app.width / 2, 325, size = 16)
         drawLabel("Perlin Noise: Wikipedia page and original papers by Ken Perlin", app.width / 2, 350, size = 16)
         drawRect(app.bbx, app.bby, app.bbw, app.bbh, fill = 'lightGray', align = 'center')
         drawLabel("Back", app.bbx, app.bby, align = 'center')
@@ -175,23 +176,99 @@ def ts_button_bounce(app, mouseX, mouseY):
 
 # probably can just call a function from a different file?
 
+def is_player_legal(app, newx, newy):
+    top = math.floor(newy // tilesize)
+    left = math.floor(newx // tilesize)
+    bot = math.floor((newy + app.ph - 1) // tilesize)
+    right = math.floor((newx + app.pw - 1) // tilesize)
+
+    for row in range(top, bot + 1):
+        for col in range(left, right + 1):
+            if not (0 <= col < len(app.world[0])) or not (0 <= row < len(app.world)):
+                return False
+            if app.world[col][row] != 0:
+                return False
+    return True
+
+def is_tile_empty(app, world_x, world_y):
+    row = world_y // tilesize
+    col = world_x // tilesize
+    return (0 <= row < worldrows and 0 <= col < worldcols and app.world[row][col] == 0)
+
+
+def movement_key_hold(app, keys):
+    if ('left' in keys or 'a' in keys) and app.vx <= app.vxcap: # if x under cap and pressing left/a
+        app.lflag = True
+        app.vx -= app.ax
+        if app.vx < -app.vxcap: 
+            app.vx = -app.vxcap
+
+    if ('right' in keys or 'd' in keys) and app.vx >= -app.vxcap: # if x over cap and pressing right/d
+        app.rflag = True
+        app.vx += app.ax
+        if app.vx > app.vxcap: # if x over cap
+            app.vx = app.vxcap
+
+    # separate if statement so that the player can jump while moving left/right
+    # if y under cap and on ground (change to a general check), and pressing up/space
+    if ('up' in keys or 'space' in keys) and app.vy < app.vycap and is_player_legal(app, app.px, app.py) and app.grounded: 
+        app.grounded = False
+        app.vy = app.vycap # jump velocity
+        if app.vy > app.vycap: # if y over cap
+            app.vy = app.vycap 
+
+def movement_key_release(app, key):
+    if key == 'left' or key == 'a':
+        app.lflag = False
+    if key == 'right' or key == 'd':
+        app.rflag = False
+
+def movement_step(app):
+    app.vy += app.grav  # apply gravity
+    app.grounded = False
+
+    if not app.lflag and app.vx < 0: # if not pressing left, and moving left
+        app.vx += app.ax # decelerate by friction
+    if not app.rflag and app.vx > 0: # if not pressing right, and moving right
+        app.vx -= app.ax # decelerate by friction
+
+    if app.vy < -app.vycap: # if y over cap (when falling)
+        app.vy = -app.vycap # decelerate by gravity
+
+    if is_player_legal(app, app.px + app.vx, app.py): 
+        app.px += app.vx # move left/right
+
+    if app.vy < 0: 
+        for test_y in range(int(app.py + app.ph), int((app.py + app.vy) + app.ph), -tilesize):
+            if (not is_tile_empty(app, app.px, test_y - 1) or
+                not is_tile_empty(app, app.px + app.pw - 1, test_y - 1)):
+                app.py = (test_y // tilesize) * tilesize - app.ph
+                app.vy = 0
+                app.grounded = True
+                break
+    else:
+        for test_y in range(int(app.py), int(app.py + app.vy), tilesize):
+            if (not is_tile_empty(app, app.px, test_y - 1) or
+                not is_tile_empty(app, app.px + app.pw - 1, test_y - 1)):
+                app.py = ((test_y // tilesize) + 1) * tilesize
+                app.vy = 0
+                break
+    app.py -= app.vy
+
+    
+    
 def draw_tile(app, tile, i, j):
     x = (i - app.camx) * tilesize + app.width // 2
     y = (j - app.camy) * tilesize + app.height // 2
     drawRect(x, y, x + tilesize, y + tilesize, fill = rgb(*app.tile_dict[tile]))
 
 def draw_game(app):
-    if not isinstance(app.world, np.ndarray):
-        print("not an array")
-        return
-    drawRect(app.px, app.py, app.pw, app.ph, fill = 'blue') #draw player
     tiles_onscreen_x = app.width // tilesize
     tiles_onscreen_y = app.height // tilesize
     start_x = int(app.camx - (tiles_onscreen_x // 2))
     end_x = int(app.camx + (tiles_onscreen_x // 2) + 1)
     start_y = int(app.camy - (tiles_onscreen_y // 2))
     end_y = int(app.camy + (tiles_onscreen_y // 2) + 1)
-    print(tiles_onscreen_x, tiles_onscreen_y, start_x, start_y, end_x, end_y)
     for i in range(start_x, end_x):
         for j in range(start_y, end_y):
             if 0 <= i < worldcols and 0 <= j < worldrows:
@@ -209,7 +286,10 @@ def redrawAll(app):
         draw_titlescreen(app)
     elif app.gamestate == 'game':
         draw_game(app)
-        
+        screen_x = (app.px - app.camx * tilesize) + app.width  // 2
+        screen_y = (app.py - app.camy * tilesize) + app.height // 2
+        drawRect(screen_x, screen_y, app.pw, app.ph, fill = 'blue') #draw player
+
 
 def onMousePress(app, mouseX, mouseY):
     if app.gamestate == 'title':
@@ -218,6 +298,14 @@ def onMousePress(app, mouseX, mouseY):
         pass
     elif app.gamestate == 'game':
         pass
+
+def onKeyHold(app, keys):
+    if app.gamestate == 'game':
+        movement_key_hold(app, keys)
+
+def onKeyRelease(app, key):
+    if app.gamestate == 'game':
+        movement_key_release(app, key)
 
 def onMouseMove(app, mouseX, mouseY):
     if app.gamestate == 'title':
@@ -229,9 +317,9 @@ def onMouseMove(app, mouseX, mouseY):
 
 def onStep(app):
     app.step += 1
-    app.px += 1
-    
+
     if app.gamestate == 'game':
+        movement_step(app)
         app.camx = app.px // tilesize
         app.camy = app.py // tilesize
 

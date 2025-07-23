@@ -9,5 +9,5 @@ scale1d = 15
 worldrows, worldcols = 200, 150
 vectorgridrows, vectorgridcols = worldrows, worldcols
 
-tilesize = 20 # square
+tilesize = 25 # square
 gamestate = 'worldgen' #game state can be 'title', 'worldgen', 'game'
