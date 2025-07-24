@@ -25,12 +25,10 @@ def smoothing_function(n):
 def interpolate(a, b, x):
     return b * smoothing_function(x) + a * (1 - smoothing_function(x))
 
-
 def dist_comp(x1, y1, x2, y2): #returns distance in component vector form (x, y)
     x = x2 - x1
     y = y2 - y1
     return x, y 
-
 
 def generate_grid_point():
     # creates the unit vectors to use to generate the noise (source: updated paper)
@@ -46,14 +44,14 @@ def generate_grid_point():
     return vector
 
 def generate_1d_slopes():
+    # similar to generate_grid_point, but generatees 1d slopes instead of 2d vectors
     slope = np.empty(worldcols)
     for i in range(worldcols):
         slope[i] = np.random.uniform(-1, 1)
     return slope
 
-slope = generate_1d_slopes()
-
-def create_1d_gradient_point(i):
+def create_1d_gradient_point(i, slope):
+    # gets the slopes + distancecs to the left and right of the sampled point
     left_slope = slope[math.floor(i)]
     right_slope = slope[math.floor(i) + 1]
     left_dist = i - math.floor(i)
@@ -63,14 +61,15 @@ def create_1d_gradient_point(i):
     noise_point = interpolate(dot_left, dot_right, left_dist)
     return noise_point
 
+# generates a 1D gradient noise array
 def sample_1d_gradient(scale1d):
-    # generates a 1D gradient noise array
+    slope = generate_1d_slopes() # generates the slope vectors
     gradient = np.empty(worldrows)
     for i in range(worldrows):
         x = i / scale1d
-        raw = create_1d_gradient_point(x)
+        raw = create_1d_gradient_point(x, slope)
         gradient[i] = np.interp(raw, (-1, 1), (worldrows - 35, worldrows - 5))
-        # normalizes the values to 0-255 for drawing
+        # normalizes to a height variation of -35 to -5 from the top of the world
     return gradient
 
 def generate_vectorgrid():
@@ -84,10 +83,7 @@ def generate_vectorgrid():
             # generates grid of random vectors
     return vectorgrid
 
-vectorgrid = generate_vectorgrid()
-
-
-def create_2d_gradient_point(i, j): #returns a "density" value of the noise at the given point
+def create_2d_gradient_point(i, j, vectorgrid): #returns a "density" value of the noise at the given point
     # this calculates the perlin noise grid square by square
     # while this is somewhat similar to 112craft (which in turn is pretty much the algorithm described in the paper), 
     # the implementation differs as this is a finite world game, so I could build this to a finite sized array
@@ -122,20 +118,16 @@ def create_2d_gradient_point(i, j): #returns a "density" value of the noise at t
     return gradient_point
 
 def sample_2d_gradient(scale):
+    vectorgrid = generate_vectorgrid()
     worldgrid = np.empty((worldrows, worldcols))
     for i in range(worldrows):
         for j in range(worldcols):
             # sample the gradient at the given scale
             x = i / scale
             y = j / scale
-            raw = create_2d_gradient_point(x, y)
+            raw = create_2d_gradient_point(x, y, vectorgrid)
             worldgrid[i][j] = np.interp(raw, (-1, 1), (0, 255))
             # normalizes the values to 0-255 for drawing
     return worldgrid
 
-def main():
-    world = sample_2d_gradient(scale)
-    print(sample_1d_gradient(scale))
-    # print(world)
-main()
 # how the freaking heck does perlin actually work bro

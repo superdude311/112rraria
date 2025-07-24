@@ -24,7 +24,7 @@ def onAppStart(app):
     init_gamevars(app) #initialize game variables
     app.tile_dict = {0:(255, 255, 255), 1:(0, 160, 0), 2:(160, 80, 0), 3:(160, 160, 160), 4:(0, 0, 0), 10:(184, 115, 51),
                      11:(211, 212, 213), 12:(78, 79, 85), 13:(231, 191, 4), 14:(230, 230, 230), 15:(46, 44, 148), 16:(196, 26, 26),
-                     17:(28, 252, 159), 18:(28, 230, 252)}
+                     17:(28, 252, 159), 18:(28, 230, 252)} # tile id-color dict 
 
 def init_world(app):
     app.stepsPerSecond = 1
@@ -136,7 +136,6 @@ def in_ts_button(app, mouseX, mouseY): #returns s, c, o depending on which butto
 
 def ts_button_press(app, mouseX, mouseY):
     if in_ts_button(app, mouseX, mouseY) == 's':
-        print("Start Game Pressed")
         app.gamestate = 'game'
     elif in_ts_button(app, mouseX, mouseY) == 'c':
         app.c_tag = True
@@ -193,7 +192,9 @@ def is_player_legal(app, newx, newy):
 def is_tile_empty(app, world_x, world_y):
     row = world_y // tilesize
     col = world_x // tilesize
-    return (0 <= row < worldrows and 0 <= col < worldcols and app.world[row][col] == 0)
+    if (0 <= row < worldrows and 0 <= col < worldcols):
+        return False
+    return app.world[row][col] == 0
 
 
 def movement_key_hold(app, keys):
@@ -238,22 +239,19 @@ def movement_step(app):
     if is_player_legal(app, app.px + app.vx, app.py): 
         app.px += app.vx # move left/right
 
-    if app.vy < 0: 
-        for test_y in range(int(app.py + app.ph), int((app.py + app.vy) + app.ph), -tilesize):
-            if (not is_tile_empty(app, app.px, test_y - 1) or
-                not is_tile_empty(app, app.px + app.pw - 1, test_y - 1)):
-                app.py = (test_y // tilesize) * tilesize - app.ph
-                app.vy = 0
-                app.grounded = True
-                break
-    else:
-        for test_y in range(int(app.py), int(app.py + app.vy), tilesize):
-            if (not is_tile_empty(app, app.px, test_y - 1) or
-                not is_tile_empty(app, app.px + app.pw - 1, test_y - 1)):
-                app.py = ((test_y // tilesize) + 1) * tilesize
+    if app.vy != 0: # player is moving
+        step_y = 1 if app.vy > 0 else - 1 #stepping down if v > 0, else stepping up
+        for i in range(int(abs(app.vy))): # check each mini-step 
+            next_y = app.py + step_y
+            bot_y = next_y + app.ph - 1 # bottom of player hitbox (feet)
+            right_x = app.px + app.pw - 1 #right edge of player hitbox
+            if is_tile_empty(app, app.px, bot_y) and is_tile_empty(app, right_x, bot_y):
+                app.py = next_y
+            else:
+                if step_y > 0:
+                    app.grounded = True
                 app.vy = 0
                 break
-    app.py -= app.vy
 
     
     
@@ -317,7 +315,6 @@ def onMouseMove(app, mouseX, mouseY):
 
 def onStep(app):
     app.step += 1
-
     if app.gamestate == 'game':
         movement_step(app)
         app.camx = app.px // tilesize
