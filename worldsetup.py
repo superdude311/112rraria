@@ -6,7 +6,10 @@ scale1d = 15
 
 # note: terraria defines much larger world sizes, which I may add in the future
 # https://terraria.fandom.com/wiki/World_size
-worldrows, worldcols = 200, 150
+worldrows, worldcols = 300, 300 # it appears that in some cases worldcols is used for rows, and vice versa
+# I would just recommend using square worlds. theres no reason not to, and theres no chance of crashing due to this bug
+# yes, at some point I'll fix it 
+
 vectorgridrows, vectorgridcols = worldrows, worldcols
 
 tilesize = 25 # square

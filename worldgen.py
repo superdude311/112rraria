@@ -65,7 +65,7 @@ def ores(worldmap):
                         world[nx][ny] = ore_id
     
     def sprinkle_blobs(world):
-        blobs_per_band = 25
+        blobs_per_band = 30
 
         for _ in range(blobs_per_band):
             for bandrange, ores in [(top_range, top_ores), (mid_range, mid_ores), (bot_range, bot_ores)]:

@@ -67,9 +67,9 @@ def init_gamevars(app):
     app.vx = 0 #player x velocity
     app.vy = 0 #player y velocity
     app.ax = 5 #friction (x axis)
-    app.grav = 0.5 #gravity
+    app.grav = 5 #gravity
     app.vxcap = 50  #velocity cap (x)
-    app.vycap = 15 #velocity cap (y)
+    app.vycap = 50 #velocity cap (y)
     app.lflag = False #press left flag
     app.rflag = False #press right flag
     app.pw = tilesize
@@ -81,6 +81,7 @@ def init_gamevars(app):
     app.toolset = set() # add to this set when the tool is gotten
     app.itemcounts = dict() #maps items to their counts
     app.held = 0
+    app.bgimg = 'game-bg-img.png'
 
 ##########################################################
 # initialize game                                        #   
@@ -183,11 +184,10 @@ def ts_button_bounce(app, mouseX, mouseY):
 #############################################################
 
 def is_player_legal(app, newx, newy):
-    top = math.floor(newy // tilesize)
-    left = math.floor(newx // tilesize)
-    bot = math.floor((newy + app.ph - 1) // tilesize)
-    right = math.floor((newx + app.pw - 1) // tilesize)
-    print(right, worldcols, len(app.world[0]), len(app.world))
+    top = newy // tilesize
+    left = newx // tilesize
+    bot = (newy + app.ph - 1) // tilesize
+    right = (newx + app.pw - 1) // tilesize
     for row in range(top, bot + 1):
         for col in range(left, right + 1):
             if not (0 <= col < len(app.world[0])) or not (0 <= row < len(app.world)):
@@ -200,7 +200,7 @@ def is_tile_empty(app, world_x, world_y):
     row = world_y // tilesize
     col = world_x // tilesize
     if (0 <= row < worldrows and 0 <= col < worldcols):
-        return app.world[row][col] == 0
+        return app.world[col][row] == 0
     return False
 
 def click_block(app, mouse_x, mouse_y):
@@ -230,7 +230,7 @@ def movement_key_hold(app, keys):
     # if y under cap and on ground (change to a general check), and pressing up/space
     if ('up' in keys or 'space' in keys) and app.vy < app.vycap and app.grounded: 
         app.grounded = False
-        app.vy = app.vycap # jump velocity
+        app.vy = -app.vycap # jump velocity
         if app.vy > app.vycap: # if y over cap
             app.vy = -app.vycap 
 
@@ -240,6 +240,9 @@ def movement_key_release(app, key):
     if key == 'right' or key == 'd':
         app.rflag = False
 
+
+# I read over the following document for collisions as well as what we learned in tetris
+# https://2dengine.com/doc/intersections.html
 def movement_step(app):
     app.vy += app.grav  # apply gravity
     app.grounded = False
@@ -272,7 +275,8 @@ def movement_step(app):
 def draw_tile(app, tile, i, j):
     x = (i - app.camx) * tilesize + app.width // 2
     y = (j - app.camy) * tilesize + app.height // 2
-    drawRect(x, y, x + tilesize, y + tilesize, fill = rgb(*app.tile_dict[tile]))
+    if tile != 0:
+        drawRect(x, y, tilesize, tilesize, fill = rgb(*app.tile_dict[tile]))
 
 def draw_game(app):
     tiles_onscreen_x = app.width // tilesize
@@ -285,8 +289,9 @@ def draw_game(app):
         for j in range(start_y, end_y):
             if (0 <= i < worldcols) and (0 <= j < worldrows):
                 tile = app.world[i][j]
-                draw_tile(app, tile, i, j)
-            else:
+                if tile != 0:
+                    draw_tile(app, tile, i, j)
+            elif (0 <= j < worldrows):
                 draw_tile(app, 0, i, j) #draw white over out of bounds tiles to prevent smearing
 
 ######################################
@@ -299,10 +304,11 @@ def redrawAll(app):
     elif app.gamestate == 'title':
         draw_titlescreen(app)
     elif app.gamestate == 'game':
+        drawImage(app.bgimg, 0, 0, width = 2400, height = 1600)
         draw_game(app)
         screen_x = (app.px - app.camx * tilesize) + app.width  // 2
         screen_y = (app.py - app.camy * tilesize) + app.height // 2
-        drawLabel(f"{app.px, app.vx, app.ax} pos, vel, acc", 200, 35)
+        drawLabel(f"{app.py, app.vy, app.grav} pos, vel, acc", 200, 35)
         drawRect(screen_x, screen_y, app.pw, app.ph, fill = 'blue') #draw player
 
 def onMousePress(app, mouseX, mouseY):
