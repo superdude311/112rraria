@@ -4,6 +4,10 @@
 # It features a procedurally generated world, player character, and various game mechanics
 # including mining, building, and combat (maybe)
 
+# Note:
+# I would've used screens for a lot of this, but I didn't know about them until I was far too deep to restart
+# I would've also used classes, and I plan on doing so if I ever add enemies to this game 
+
 # titlescreen logo generated with Terraria Logo Maker: https://terraria-logo-maker.darthmorf.co.uk/
 # titlescreen background image created by MiltVala: https://forums.terraria.org/index.php?threads/terraria-desktop-wallpapers.12644/
 # sprites found from spriters-resource.com: https://www.spriters-resource.com/pc_computer/terraria/sheet/131821/
@@ -183,7 +187,7 @@ def is_player_legal(app, newx, newy):
     left = math.floor(newx // tilesize)
     bot = math.floor((newy + app.ph - 1) // tilesize)
     right = math.floor((newx + app.pw - 1) // tilesize)
-
+    print(right, worldcols, len(app.world[0]), len(app.world))
     for row in range(top, bot + 1):
         for col in range(left, right + 1):
             if not (0 <= col < len(app.world[0])) or not (0 <= row < len(app.world)):
@@ -204,6 +208,10 @@ def click_block(app, mouse_x, mouse_y):
     # else if item in hand is block, and tile is empty, place block
     # else do nothing
     pass
+
+def game_key_press(app, key):
+    if key == 'esc' or key == 'escape':
+        app.gamestate = 'title'
 
 def movement_key_hold(app, keys):
     if ('left' in keys or 'a' in keys) and app.vx <= app.vxcap: # if x under cap and pressing left/a
@@ -242,7 +250,7 @@ def movement_step(app):
         app.vx -= app.ax # decelerate by friction
 
     if app.vy < -app.vycap: # if y over cap (when falling)
-        app.vy = -app.vycap # decelerate by gravity
+        app.vy = -app.vycap 
 
     if is_player_legal(app, app.px + app.vx, app.py): 
         app.px += app.vx # move left/right
@@ -275,9 +283,11 @@ def draw_game(app):
     end_y = int(app.camy + (tiles_onscreen_y // 2) + 1)
     for i in range(start_x, end_x):
         for j in range(start_y, end_y):
-            if 0 <= i < worldcols and 0 <= j < worldrows:
+            if (0 <= i < worldcols) and (0 <= j < worldrows):
                 tile = app.world[i][j]
                 draw_tile(app, tile, i, j)
+            else:
+                draw_tile(app, 0, i, j) #draw white over out of bounds tiles to prevent smearing
 
 ######################################
 # general MVC functions for the game #
@@ -302,6 +312,10 @@ def onMousePress(app, mouseX, mouseY):
         pass
     elif app.gamestate == 'game':
         pass
+
+def onKeyPress(app, key):
+    if app.gamestate == 'game':
+        game_key_press(app, key)
 
 def onKeyHold(app, keys):
     if app.gamestate == 'game':
