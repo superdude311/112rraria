@@ -80,7 +80,7 @@ def init_gamevars(app):
     app.items = dict() # maps key presses to items
     app.toolset = set() # add to this set when the tool is gotten
     app.itemcounts = dict() #maps items to their counts
-    app.held = 0
+    app.held = 0 #held item
     app.bgimg = 'game-bg-img.png'
 
 ##########################################################
@@ -279,6 +279,15 @@ def movement_step(app):
                 else:
                     app.vy = 0
                     break
+
+def inv_keypress(app, key):
+    # polls key presses and displays item 
+    pass
+
+def crafting(app):
+    # if key is pressed for tool, and you have enough items, add tool to toolset
+    # once there are enough items, maybe i can flash the tool on the screen
+    pass
 
 def draw_tools_menu(app):
     # draws the tools pane on the side/bottom/top with all of the tools (which are unlocked)
