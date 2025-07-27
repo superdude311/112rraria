@@ -279,7 +279,17 @@ def movement_step(app):
                 else:
                     app.vy = 0
                     break
-    
+
+def draw_tools_menu(app):
+    # draws the tools pane on the side/bottom/top with all of the tools (which are unlocked)
+    # selected tool is a larger rectangle with text showing what it is
+    pass
+
+def draw_blocks_menu(app):
+    # draws the inventory pane on the side/bottom/top with all of the blocks and their counts in it
+    # selected block is a larger rectangle with text showing what it is
+    pass
+
 def draw_tile(app, tile, i, j):
     x = (i - app.camx) * tilesize + app.width // 2
     y = (j - app.camy) * tilesize + app.height // 2
