@@ -66,17 +66,17 @@ def init_gamevars(app):
     app.py = 300 #player y position
     app.vx = 0 #player x velocity
     app.vy = 0 #player y velocity
-    app.ax = 5 #friction (x axis)
-    app.grav = 5 #gravity
-    app.vxcap = 50  #velocity cap (x)
-    app.vycap = 50 #velocity cap (y)
+    app.ax = 2.5 #friction (x axis)
+    app.grav = 2.5 #gravity
+    app.vxcap = 25  #velocity cap (x)
+    app.vycap = 25 #velocity cap (y)
     app.lflag = False #press left flag
     app.rflag = False #press right flag
     app.pw = tilesize
     app.ph = tilesize * 2 #player width/height
     app.camx, app.camy = app.px // tilesize, app.py // tilesize
     app.grounded = False
-    app.tools = {'Q':'stone pickaxe', 'W':'iron pickaxe', 'E':'golden drill'} #maps key presses to tools
+    app.tools = {'Q':'stone pickaxe', 'W':'iron pickaxe', 'E':'golden drill', 'R':'magic mirror'} #maps key presses to tools
     app.items = dict() # maps key presses to items
     app.toolset = set() # add to this set when the tool is gotten
     app.itemcounts = dict() #maps items to their counts
@@ -188,17 +188,18 @@ def is_player_legal(app, newx, newy):
     left = newx // tilesize
     bot = (newy + app.ph - 1) // tilesize
     right = (newx + app.pw - 1) // tilesize
-    for row in range(top, bot + 1):
-        for col in range(left, right + 1):
+
+    for row in range(math.floor(top), math.floor(bot) + 1): #checks all the player tiles
+        for col in range(math.floor(left), math.floor(right) + 1):
             if not (0 <= col < len(app.world[0])) or not (0 <= row < len(app.world)):
-                return False
+                return False # not legal if outside world
             if app.world[col][row] != 0:
-                return False
+                return False # or if in a block
     return True
 
 def is_tile_empty(app, world_x, world_y):
-    row = world_y // tilesize
-    col = world_x // tilesize
+    row = int(world_y // tilesize)
+    col = int(world_x // tilesize)
     if (0 <= row < worldrows and 0 <= col < worldcols):
         return app.world[col][row] == 0
     return False
@@ -262,15 +263,22 @@ def movement_step(app):
         step_y = 1 if app.vy > 0 else - 1 #stepping down if v > 0, else stepping up
         for i in range(math.ceil(abs(app.vy))): # check each mini-step 
             next_y = app.py + step_y
-            bot_y = next_y + app.ph - 1 # bottom of player hitbox (feet)
             right_x = app.px + app.pw - 1 #right edge of player hitbox
-            if is_tile_empty(app, app.px, bot_y) and is_tile_empty(app, right_x, bot_y):
-                app.py = next_y
-            else:
-                if step_y > 0:
-                    app.grounded = True
-                app.vy = 0
-                break
+            if step_y > 0: #check foot collision if falling
+                bot_y = next_y + app.ph - 1 # bottom of player hitbox (feet)
+                if is_tile_empty(app, app.px, bot_y) and is_tile_empty(app, right_x, bot_y):
+                    app.py = next_y
+                else:
+                    if step_y > 0:
+                        app.grounded = True
+                    app.vy = 0
+                    break
+            else: #check head collision if rising
+                if is_tile_empty(app, app.px, next_y) and is_tile_empty(app, right_x, next_y):
+                    app.py = next_y
+                else:
+                    app.vy = 0
+                    break
     
 def draw_tile(app, tile, i, j):
     x = (i - app.camx) * tilesize + app.width // 2

@@ -11,3 +11,4 @@
 # nothing breaks barrier blocks (black solid things)
 # hotbar has (9 ores + 3 ground + 3 tools = 15) slots, accessed by 0 to + on the keyboard (for blocks)
 # tools are accessed with QWE
+# R is the magic mirror, which warps you up to the top of the map (set app.py to zero)
