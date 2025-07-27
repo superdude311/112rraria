@@ -63,8 +63,8 @@ def init_gamevars(app):
     app.vx = 0 #player x velocity
     app.vy = 0 #player y velocity
     app.ax = 5 #friction (x axis)
-    app.grav = -0.5 #gravity
-    app.vxcap = 10  #velocity cap (x)
+    app.grav = 0.5 #gravity
+    app.vxcap = 50  #velocity cap (x)
     app.vycap = 15 #velocity cap (y)
     app.lflag = False #press left flag
     app.rflag = False #press right flag
@@ -72,6 +72,11 @@ def init_gamevars(app):
     app.ph = tilesize * 2 #player width/height
     app.camx, app.camy = app.px // tilesize, app.py // tilesize
     app.grounded = False
+    app.tools = {'Q':'stone pickaxe', 'W':'iron pickaxe', 'E':'golden drill'} #maps key presses to tools
+    app.items = dict() # maps key presses to items
+    app.toolset = set() # add to this set when the tool is gotten
+    app.itemcounts = dict() #maps items to their counts
+    app.held = 0
 
 ##########################################################
 # initialize game                                        #   
@@ -173,8 +178,6 @@ def ts_button_bounce(app, mouseX, mouseY):
 # update world state, update player state, update inventory #
 #############################################################
 
-# probably can just call a function from a different file?
-
 def is_player_legal(app, newx, newy):
     top = math.floor(newy // tilesize)
     left = math.floor(newx // tilesize)
@@ -193,9 +196,14 @@ def is_tile_empty(app, world_x, world_y):
     row = world_y // tilesize
     col = world_x // tilesize
     if (0 <= row < worldrows and 0 <= col < worldcols):
-        return False
-    return app.world[row][col] == 0
+        return app.world[row][col] == 0
+    return False
 
+def click_block(app, mouse_x, mouse_y):
+    # if item in hand is tool, and item in hand can break block, break block
+    # else if item in hand is block, and tile is empty, place block
+    # else do nothing
+    pass
 
 def movement_key_hold(app, keys):
     if ('left' in keys or 'a' in keys) and app.vx <= app.vxcap: # if x under cap and pressing left/a
@@ -212,11 +220,11 @@ def movement_key_hold(app, keys):
 
     # separate if statement so that the player can jump while moving left/right
     # if y under cap and on ground (change to a general check), and pressing up/space
-    if ('up' in keys or 'space' in keys) and app.vy < app.vycap and is_player_legal(app, app.px, app.py) and app.grounded: 
+    if ('up' in keys or 'space' in keys) and app.vy < app.vycap and app.grounded: 
         app.grounded = False
         app.vy = app.vycap # jump velocity
         if app.vy > app.vycap: # if y over cap
-            app.vy = app.vycap 
+            app.vy = -app.vycap 
 
 def movement_key_release(app, key):
     if key == 'left' or key == 'a':
@@ -241,7 +249,7 @@ def movement_step(app):
 
     if app.vy != 0: # player is moving
         step_y = 1 if app.vy > 0 else - 1 #stepping down if v > 0, else stepping up
-        for i in range(int(abs(app.vy))): # check each mini-step 
+        for i in range(math.ceil(abs(app.vy))): # check each mini-step 
             next_y = app.py + step_y
             bot_y = next_y + app.ph - 1 # bottom of player hitbox (feet)
             right_x = app.px + app.pw - 1 #right edge of player hitbox
@@ -252,8 +260,6 @@ def movement_step(app):
                     app.grounded = True
                 app.vy = 0
                 break
-
-    
     
 def draw_tile(app, tile, i, j):
     x = (i - app.camx) * tilesize + app.width // 2
@@ -286,8 +292,8 @@ def redrawAll(app):
         draw_game(app)
         screen_x = (app.px - app.camx * tilesize) + app.width  // 2
         screen_y = (app.py - app.camy * tilesize) + app.height // 2
+        drawLabel(f"{app.px, app.vx, app.ax} pos, vel, acc", 200, 35)
         drawRect(screen_x, screen_y, app.pw, app.ph, fill = 'blue') #draw player
-
 
 def onMousePress(app, mouseX, mouseY):
     if app.gamestate == 'title':

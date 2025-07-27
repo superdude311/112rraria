@@ -8,7 +8,6 @@ import random
 
 def terraingen():
     # generates terrain for the world
-    # carson recommendation:use a numpy array and set the dtype to uint8 and use that for your big tile grid
     # uses perlin noise (so I can flex) to create terrain with caves and hills
     updated_world = np.empty((worldrows, worldcols))  # creates an empty world array
     base_perlin = sample_2d_gradient(scale)  # generates the base perlin noise gradient
@@ -51,9 +50,10 @@ def ores(worldmap):
     ore_IDs = {'copper': 10, 'tin': 11, 'iron': 12,
                 'gold': 13, 'silver': 14, 'lead': 15,
                 'palladium': 16, 'mithril': 17, 'platinum': 18}
+    
     # generates ores in blobs in the world 
     # ores are generated inside rocks, with a chance to poke out into caves
-    # ores get more common as the player goes deeper into the world
+    # different ores get more common as the player goes deeper into the world
 
     def paint_ore_blob(world, x, y, ore_id, radius):
         for dx in range(-radius, radius + 1):
@@ -79,33 +79,11 @@ def ores(worldmap):
         return world
     
     sprinkle_blobs(terrain)
-    # probably could use perlin but with a really large scale, and only draw at a very high threshold
     return terrain #2d array of world, now including ore tiles
-
-def water():
-    # generates water bodies in the world
-    # water is generated above certain depth, with a smaller chance to generate in caves
-    # water (somehow) checks for terrain and flows down if able
-    # yeah i probably don't have time for this 
-    return #2d array of water tiles
-
-def trees():
-    #adds trees to the world at random positions
-    #trees are between x and y tiles tall, with leaves on top
-    #when broken, all adjacent wood tiles are dropped, and leaves have a chance to drop saplings
-    #trees are generated in a way that they don't overlap with terrain or other trees
-    return #2d array of tree tiles
-
 
 def worldgen():
     terrain = terraingen()
     ore_world = ores(terrain) #adds ores to the world
-    print(terrain.shape)
-    print(type(ore_world))
     print("world created")
-    # water() 
-    # trees() #worst case i can get rid of trees
     # initializes the game world
     return ore_world  # returns the generated world array
-    
-
