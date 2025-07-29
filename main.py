@@ -95,6 +95,8 @@ def init_gamevars(app):
     app.held = None #held itemID
     app.bgimg = 'game-bg-img.png'
     app.debug = False
+    app.IDtoImage = {5:"sprites/'stone'_pickaxe.png", 8:'sprites/magicmirror.png'}
+    
 
 ##########################################################
 # initialize game                                        #   
@@ -339,23 +341,75 @@ def inv_keypress(app, key):
     elif key == '3':
         app.held = 3
     elif key == '4':
-        app.held = 4
+        app.held = 10
     elif key == '5':
-        app.held = 5
+        app.held = 11
     elif key == '6':
+        app.held = 12
+    elif key == '7':
+        app.held = 13
+    elif key == '8':
+        app.held = 14
+    elif key == '9':
+        app.held = 15
+    elif key == '0':
+        app.held = 16
+    elif key == '-':
+        app.held = 17
+    elif key == '+':
+        app.held = 18
+    elif key == 'q':
+        app.held = 5
+    elif key == 'w':
         app.held = 6
-    
-    pass
+    elif key == 'e':
+        app.held = 7
+    elif key == 'r':
+        app.held = 8 #magic mirror
+        app.py = 0
 
+# if key is pressed for tool, and you have enough items, add tool to toolset
+# once there are enough items, maybe i can flash the tool on the screen
 def crafting(app, key):
-    # if key is pressed for tool, and you have enough items, add tool to toolset
-    # once there are enough items, maybe i can flash the tool on the screen
-    pass
+    if key == 'q' and 5 not in app.toolset:
+        if app.itemcounts[3] == 6: # if you have 6 stone
+            app.toolset.add(5) # add pickaxe
+    if key == 'w' and 6 not in app.toolset:
+        if app.itemcounts[3] == 3 and app.itemcounts[12] == 6:
+            app.toolset.add(6)
+    if key == 'e' and 7 not in app.toolset:
+        if app.itemcounts[3] == 3 and app.itemcounts[13] == 6:
+            app.toolset.add(7)
 
 def draw_tools_menu(app):
+    for i in range(4):
+        drawRect(25, 25 + 75 * i, 75, 75, fill = 'lightGrey', border = 'black', borderWidth = 2, opacity = 75)
+    drawRect(25, 25, 75, 300, fill = None, border = 'black', borderWidth = 4)
+    drawLabel('Q', 87.5, 87.5, bold = True)
+    if 5 not in app.toolset:
+        if app.itemcounts[3] < 6:
+           drawLabel('need', 62.5, 50)
+           drawLabel(f'{6 - app.itemcounts[3]} stone', 62.5, 62.5)
+        elif app.itemcounts[3] == 6:
+            drawLabel('press Q', 62.5, 50)
+            drawLabel('to craft', 62.5, 62.5)
+    else:
+        drawImage(app.IDtoImage[5], 37.5, 37.5, width = 50, height = 50)
+    drawLabel('W', 87.5, 162.5, bold = True)
+
+    drawLabel('E', 87.5, 237.5, bold = True)
+
+
+    drawImage(app.IDtoImage[8], 37.5, 262.5, width = 50, height = 50)
+    drawLabel('R', 87.5, 312.5, bold = True)
     # draws the tools pane on the side/bottom/top with all of the tools (which are unlocked)
     # selected tool is a larger rectangle with text showing what it is
     pass
+
+def draw_held(app):
+    drawRect(25, app.height - 125, 100, 100, fill = 'gold', border = 'black', borderWidth = 4, opacity = 75)
+    if app.held != None:
+        drawImage(app.IDtoImage[app.held], 37.5, app.height - 112.5, width = 75, height = 75)
 
 def draw_blocks_menu(app):
     # draws the inventory pane on the side/bottom/top with all of the blocks and their counts in it
@@ -402,6 +456,8 @@ def redrawAll(app):
             drawLabel(f"(x, y) coordinate: {(app.px, app.py)}", 100, 35)
             drawLabel(f"(x, y) velocity: {(app.vx, app.vy)}", 100, 55)
         drawRect(screen_x, screen_y, app.pw, app.ph, fill = 'blue') #draw player
+        draw_tools_menu(app)
+        draw_held(app)
 
 def onMousePress(app, mouseX, mouseY):
     if app.gamestate == 'title':
@@ -415,6 +471,8 @@ def onMousePress(app, mouseX, mouseY):
 def onKeyPress(app, key):
     if app.gamestate == 'game':
         game_key_press(app, key)
+        crafting(app, key)
+        inv_keypress(app, key)
 
 def onKeyHold(app, keys):
     if app.gamestate == 'game':
