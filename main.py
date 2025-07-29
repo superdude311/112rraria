@@ -16,6 +16,17 @@ from cmu_graphics import *
 from worldsetup import *
 from worldgen import *
 
+'''
+toolIDs:
+5: stone pickaxe, 6: iron pickaxe, 7: golden drill
+8: magic mirror
+note itemIDs: 
+Tier 0: 0: air, 1: grass, 2: dirt, 3: stone,
+Tier 1: 10: copper, 11:tin, 12: iron
+Tier 2: 13: gold, 14: silver, 15: lead
+Tier 3: 16: palladium, 17: mithril, 18: platinum
+Unbreakable: 4: barrier
+'''
 
 # initialize variables n things 
 def onAppStart(app):
@@ -28,7 +39,7 @@ def onAppStart(app):
     init_gamevars(app) #initialize game variables
     app.tile_dict = {0:(255, 255, 255), 1:(0, 160, 0), 2:(160, 80, 0), 3:(160, 160, 160), 4:(0, 0, 0), 10:(184, 115, 51),
                      11:(211, 212, 213), 12:(78, 79, 85), 13:(231, 191, 4), 14:(230, 230, 230), 15:(46, 44, 148), 16:(196, 26, 26),
-                     17:(28, 252, 159), 18:(28, 230, 252)} # tile id-color dict 
+                     17:(28, 252, 159), 18:(28, 230, 252)} # itemID-color dict (replace w/ sprite URLs)
 
 def init_world(app):
     app.stepsPerSecond = 1
@@ -76,11 +87,12 @@ def init_gamevars(app):
     app.ph = tilesize * 2 #player width/height
     app.camx, app.camy = app.px // tilesize, app.py // tilesize
     app.grounded = False
-    app.tools = {'Q':'stone pickaxe', 'W':'iron pickaxe', 'E':'golden drill', 'R':'magic mirror'} #maps key presses to tools
-    app.items = dict() # maps key presses to items
+    app.tools = {'Q':5, 'W':6, 'E':7, 'R':8} #maps key presses to toolIDs
+    app.items = {'1':1, '2':1, '3':3, '4':10, '5':11, '6':12, '7':13, '8':14, '9':15, '0':16, '-':17, '+':18} # maps key presses to itemIDs
     app.toolset = set() # add to this set when the tool is gotten
-    app.itemcounts = dict() #maps items to their counts
-    app.held = 0 #held item
+    app.itemcounts = {1:0, 2:0, 3:0, 10:0, 11:0, 12:0, 13:0, 14:0, 15:0, 16:0, 17:0, 18:0} #maps itemIDs to their counts (all start = 0)
+    app.IDtoname = dict() #maps itemIDs/toolIDs to names (for displaying)
+    app.held = None #held itemID
     app.bgimg = 'game-bg-img.png'
     app.debug = False
 
@@ -209,28 +221,42 @@ def is_tile_empty(app, world_x, world_y):
         return app.world[col][row] == 0
     return False
 
+def break_check(app, tiletype):
+    if app.held == 5:
+        return True if tiletype <= 12 else False
+    if app.held == 6:
+        return True if tiletype <= 15 else False
+    if app.held == 7:
+        return True if tiletype <= 18 else False
+
+# if item in hand is tool, and item in hand can break block, break block
+# else if item in hand is block, and tile is empty, place block
+# else do nothing
 def click_block(app, mouse_x, mouse_y):
     tile_offset_x = (mouse_x - (app.width // 2)) // tilesize
     tile_offset_y = (mouse_y - (app.height // 2)) // tilesize
-    tilecol = app.camx + tile_offset_x
-    tilerow = app.camy + tile_offset_y
-    if app.held in app.tools:
-        pass
-        #check if can break block
-    elif app.held in app.items:
-        pass
-        #check if app.itemcount[app.held] is >= 1, if so, place block
-    elif app.held == None:
-        if 0 < app.world[tilecol][tilerow] <= 3: # really cursed way of checking if its stone/grass/dirt
-            tiletype = app.world[tilecol][tilerow]
-            if tiletype in app.itemcount:
-                pass
-            app.world[tilecol][tilerow] = 0
-
-    # if item in hand is tool, and item in hand can break block, break block
-    # else if item in hand is block, and tile is empty, place block
-    # else do nothing
-    pass
+    tilecol = int(app.camx + tile_offset_x)
+    tilerow = int(app.camy + tile_offset_y)
+    if 0 <= tilecol < worldcols and 0 <= tilerow < worldrows:
+        if app.held in app.tools:
+            if break_check(app, app.world[tilecol][tilerow]):
+                tiletype = app.world[tilecol][tilerow]
+                app.world[tilecol][tilerow] = 0
+                app.itemcounts[tiletype] += 1
+        elif app.held in app.items:
+            if app.itemcounts[app.held] >= 1 and app.world[tilecol][tilerow] == 0: #if you have enough items and tile empty
+                app.world[tilecol][tilerow] = app.held #places block
+                app.itemcounts[app.held] -= 1 #removes one from inv
+            elif 0 < app.world[tilecol][tilerow] <= 3: #allows you to still break blocks if you don't have tools
+                tiletype = app.world[tilecol][tilerow] # will be 1, 2, 3
+                app.world[tilecol][tilerow] = 0 
+                app.itemcounts[tiletype] += 1 #adds to inventory
+        elif app.held == None:
+            if 0 < app.world[tilecol][tilerow] <= 3: # really cursed way of checking if its stone/grass/dirt
+                tiletype = app.world[tilecol][tilerow] # will be 1, 2, 3
+                app.world[tilecol][tilerow] = 0 
+                app.itemcounts[tiletype] += 1 #adds to inventory
+                print(app.itemcounts)
 
 def game_key_press(app, key):
     if key == 'esc' or key == 'escape':
@@ -321,7 +347,7 @@ def inv_keypress(app, key):
     
     pass
 
-def crafting(app):
+def crafting(app, key):
     # if key is pressed for tool, and you have enough items, add tool to toolset
     # once there are enough items, maybe i can flash the tool on the screen
     pass
@@ -383,6 +409,7 @@ def onMousePress(app, mouseX, mouseY):
     elif app.gamestate == 'worldgen':
         pass
     elif app.gamestate == 'game':
+        click_block(app, mouseX, mouseY)
         pass
 
 def onKeyPress(app, key):
