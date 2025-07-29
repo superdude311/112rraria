@@ -82,6 +82,7 @@ def init_gamevars(app):
     app.itemcounts = dict() #maps items to their counts
     app.held = 0 #held item
     app.bgimg = 'game-bg-img.png'
+    app.debug = False
 
 ##########################################################
 # initialize game                                        #   
@@ -109,12 +110,16 @@ def draw_titlescreen(app):
         drawLabel("Options", app.obx, app.oby - 10, align = 'center', size = 18)
         drawLabel("How to Play", app.obx, app.oby + 10, align = 'center')
     elif app.o_tag:
-        drawImage(app.options_img, app.width // 2, app.height // 2, width = 1200, height = 800, align = 'center', opacity = 85)
+        drawImage(app.options_img, app.width // 2, app.height // 2, width = 1200, height = 800, align = 'center', opacity = 75)
         drawLabel("Options (and how to play)", app.width / 2, 75, size = 36)
         drawLabel("Press the up arrow or space to jump", app.width // 2, 125, size = 24)
         drawLabel("Press left/right arrow or a/d to move", app.width // 2, 150, size = 24)
         drawLabel("Left click with item in hand to place", app.width // 2, 175, size = 24)
         drawLabel("Left click with tool in hand to break", app.width // 2, 200, size = 24)
+        drawLabel("Press 'i' to open the info/debug menu", app.width // 2, 225, size = 24)
+        drawLabel("Press keys 1 through + to select different blocks", app.width // 2, 250, size = 24)
+        drawLabel("Press Q, W, and E to select tools", app.width // 2, 275, size = 24)
+        drawLabel("Press R to use the Magic Mirror, which warps you to the top of the map", app.width // 2, 300, size = 24)
         drawRect(app.bbx, app.bby, app.bbw, app.bbh, fill = 'lightGray', align = 'center')
         drawLabel("Back", app.bbx, app.bby, align = 'center')
     elif app.c_tag:
@@ -205,6 +210,23 @@ def is_tile_empty(app, world_x, world_y):
     return False
 
 def click_block(app, mouse_x, mouse_y):
+    tile_offset_x = (mouse_x - (app.width // 2)) // tilesize
+    tile_offset_y = (mouse_y - (app.height // 2)) // tilesize
+    tilecol = app.camx + tile_offset_x
+    tilerow = app.camy + tile_offset_y
+    if app.held in app.tools:
+        pass
+        #check if can break block
+    elif app.held in app.items:
+        pass
+        #check if app.itemcount[app.held] is >= 1, if so, place block
+    elif app.held == None:
+        if 0 < app.world[tilecol][tilerow] <= 3: # really cursed way of checking if its stone/grass/dirt
+            tiletype = app.world[tilecol][tilerow]
+            if tiletype in app.itemcount:
+                pass
+            app.world[tilecol][tilerow] = 0
+
     # if item in hand is tool, and item in hand can break block, break block
     # else if item in hand is block, and tile is empty, place block
     # else do nothing
@@ -213,6 +235,8 @@ def click_block(app, mouse_x, mouse_y):
 def game_key_press(app, key):
     if key == 'esc' or key == 'escape':
         app.gamestate = 'title'
+    if key == 'i':
+        app.debug = not app.debug
 
 def movement_key_hold(app, keys):
     if ('left' in keys or 'a' in keys) and app.vx <= app.vxcap: # if x under cap and pressing left/a
@@ -228,7 +252,7 @@ def movement_key_hold(app, keys):
             app.vx = app.vxcap
 
     # separate if statement so that the player can jump while moving left/right
-    # if y under cap and on ground (change to a general check), and pressing up/space
+    # if y under cap and on ground, and pressing up/space
     if ('up' in keys or 'space' in keys) and app.vy < app.vycap and app.grounded: 
         app.grounded = False
         app.vy = -app.vycap # jump velocity
@@ -281,7 +305,20 @@ def movement_step(app):
                     break
 
 def inv_keypress(app, key):
-    # polls key presses and displays item 
+    # polls key presses and displays item
+    if key == '1':
+        app.held = 1
+    elif key == '2':
+        app.held = 2
+    elif key == '3':
+        app.held = 3
+    elif key == '4':
+        app.held = 4
+    elif key == '5':
+        app.held = 5
+    elif key == '6':
+        app.held = 6
+    
     pass
 
 def crafting(app):
@@ -335,7 +372,9 @@ def redrawAll(app):
         draw_game(app)
         screen_x = (app.px - app.camx * tilesize) + app.width  // 2
         screen_y = (app.py - app.camy * tilesize) + app.height // 2
-        drawLabel(f"{app.py, app.vy, app.grav} pos, vel, acc", 200, 35)
+        if app.debug:
+            drawLabel(f"(x, y) coordinate: {(app.px, app.py)}", 100, 35)
+            drawLabel(f"(x, y) velocity: {(app.vx, app.vy)}", 100, 55)
         drawRect(screen_x, screen_y, app.pw, app.ph, fill = 'blue') #draw player
 
 def onMousePress(app, mouseX, mouseY):
