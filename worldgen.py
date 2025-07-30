@@ -87,3 +87,10 @@ def worldgen():
     print("world created")
     # initializes the game world
     return ore_world  # returns the generated world array
+
+def texturevariants():
+    variants = np.empty((worldrows, worldcols))
+    for i in range(worldrows):
+        for j in range(worldcols):
+            variants[i][j] = random.randint(0, 2)
+    return variants

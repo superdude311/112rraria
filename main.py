@@ -87,15 +87,36 @@ def init_gamevars(app):
     app.ph = tilesize * 2 #player width/height
     app.camx, app.camy = app.px // tilesize, app.py // tilesize
     app.grounded = False
-    app.tools = {'Q':5, 'W':6, 'E':7, 'R':8} #maps key presses to toolIDs
-    app.items = {'1':1, '2':1, '3':3, '4':10, '5':11, '6':12, '7':13, '8':14, '9':15, '0':16, '-':17, '+':18} # maps key presses to itemIDs
+    app.tools = {'q':5, 'w':6, 'e':7, 'r':8} #maps key presses to toolIDs
+    app.items = {'1':1, '2':1, '3':3, '4':10, '5':11, '6':12, '7':13, '8':14, '9':15, '0':16, '-':17, '=':18} # maps key presses to itemIDs
     app.toolset = set() # add to this set when the tool is gotten
+    app.toolset.add(8)
     app.itemcounts = {1:0, 2:0, 3:0, 10:0, 11:0, 12:0, 13:0, 14:0, 15:0, 16:0, 17:0, 18:0} #maps itemIDs to their counts (all start = 0)
-    app.IDtoname = dict() #maps itemIDs/toolIDs to names (for displaying)
+    app.IDtoname = {1:"Grass", 2:"Dirt", 3:"Stone", 5:"Stone Pickaxe", 6:"Iron Pickaxe", 7:"Golden Drill", 8:"Magic Mirror",
+                    10:"Copper", 11:"Tin", 12:"Iron", 13:"Gold", 14:"Silver", 15:"Lead", 16:"Palladium", 17:"Mithril",
+                    18:"Platinum"} #maps itemIDs/toolIDs to names (for displaying)
     app.held = None #held itemID
     app.bgimg = 'game-bg-img.png'
     app.debug = False
-    app.IDtoImage = {5:"sprites/'stone'_pickaxe.png", 8:'sprites/magicmirror.png'}
+    app.fastmode = False
+    #ItemID to image path dict
+    #dear god, make the pain stop
+    app.IDtoImage = {1:['sprites/grass0.png', 'sprites/grass1.png', 'sprites/grass2.png'],
+                     2:['sprites/dirt0.png', 'sprites/dirt1.png', 'sprites/dirt2.png'],
+                     3:['sprites/stone0.png', 'sprites/stone1.png', 'sprites/stone2.png'],
+                     5:"sprites/'stone'_pickaxe.png", 
+                     6:"sprites/'iron'_pickaxe.png", 
+                     7:"sprites/'golden'_drill.png", 
+                     8:'sprites/magicmirror.png',
+                     10:['sprites/copper0.png', 'sprites/copper1.png', 'sprites/copper2.png'],
+                     11:['sprites/tin0.png', 'sprites/tin1.png', 'sprites/tin2.png'],
+                     12:['sprites/iron0.png', 'sprites/iron1.png', 'sprites/iron2.png'],
+                     13:['sprites/gold0.png', 'sprites/gold1.png', 'sprites/gold2.png'],
+                     14:['sprites/silver0.png', 'sprites/silver1.png', 'sprites/silver2.png'],
+                     15:['sprites/lead0.png', 'sprites/lead1.png', 'sprites/lead2.png'],
+                     16:['sprites/pallad0.png', 'sprites/pallad1.png', 'sprites/pallad2.png'],
+                     17:['sprites/mith0.png', 'sprites/mith1.png', 'sprites/mith2.png'],
+                     18:['sprites/plat0.png', 'sprites/plat1.png', 'sprites/plat2.png']}
     
 
 ##########################################################
@@ -105,6 +126,7 @@ def init_gamevars(app):
 
 def create_world(app):
     app.world = worldgen()
+    app.texturevariants = texturevariants()
     app.gamestate = 'title'
 
 ###################
@@ -134,6 +156,7 @@ def draw_titlescreen(app):
         drawLabel("Press keys 1 through + to select different blocks", app.width // 2, 250, size = 24)
         drawLabel("Press Q, W, and E to select tools", app.width // 2, 275, size = 24)
         drawLabel("Press R to use the Magic Mirror, which warps you to the top of the map", app.width // 2, 300, size = 24)
+        drawLabel('Press F to toggle Fast Mode, which renders tiles using rectangles', app.width // 2, 325, size = 24)
         drawRect(app.bbx, app.bby, app.bbw, app.bbh, fill = 'lightGray', align = 'center')
         drawLabel("Back", app.bbx, app.bby, align = 'center')
     elif app.c_tag:
@@ -225,12 +248,17 @@ def is_tile_empty(app, world_x, world_y):
 
 def break_check(app, tiletype):
     if app.held == 5:
-        return True if tiletype <= 12 else False
+        if tiletype <= 12 and tiletype != 4:
+            return True  
+        return False
     if app.held == 6:
-        return True if tiletype <= 15 else False
+        if tiletype <= 15 and tiletype != 4:
+            return True  
+        return False    
     if app.held == 7:
-        return True if tiletype <= 18 else False
-
+        if tiletype <= 12 and tiletype != 4:
+            return True  
+        return False
 # if item in hand is tool, and item in hand can break block, break block
 # else if item in hand is block, and tile is empty, place block
 # else do nothing
@@ -240,12 +268,12 @@ def click_block(app, mouse_x, mouse_y):
     tilecol = int(app.camx + tile_offset_x)
     tilerow = int(app.camy + tile_offset_y)
     if 0 <= tilecol < worldcols and 0 <= tilerow < worldrows:
-        if app.held in app.tools:
+        if app.held in app.toolset and app.world[tilecol][tilerow] != 0:
             if break_check(app, app.world[tilecol][tilerow]):
                 tiletype = app.world[tilecol][tilerow]
                 app.world[tilecol][tilerow] = 0
                 app.itemcounts[tiletype] += 1
-        elif app.held in app.items:
+        elif app.held in app.itemcounts:
             if app.itemcounts[app.held] >= 1 and app.world[tilecol][tilerow] == 0: #if you have enough items and tile empty
                 app.world[tilecol][tilerow] = app.held #places block
                 app.itemcounts[app.held] -= 1 #removes one from inv
@@ -253,7 +281,7 @@ def click_block(app, mouse_x, mouse_y):
                 tiletype = app.world[tilecol][tilerow] # will be 1, 2, 3
                 app.world[tilecol][tilerow] = 0 
                 app.itemcounts[tiletype] += 1 #adds to inventory
-        elif app.held == None:
+        elif app.held == None or (app.held != 5 and app.held != 6 and app.held != 7):
             if 0 < app.world[tilecol][tilerow] <= 3: # really cursed way of checking if its stone/grass/dirt
                 tiletype = app.world[tilecol][tilerow] # will be 1, 2, 3
                 app.world[tilecol][tilerow] = 0 
@@ -265,6 +293,8 @@ def game_key_press(app, key):
         app.gamestate = 'title'
     if key == 'i':
         app.debug = not app.debug
+    if key == 'f':
+        app.fastmode = not app.fastmode
 
 def movement_key_hold(app, keys):
     if ('left' in keys or 'a' in keys) and app.vx <= app.vxcap: # if x under cap and pressing left/a
@@ -334,35 +364,35 @@ def movement_step(app):
 
 def inv_keypress(app, key):
     # polls key presses and displays item
-    if key == '1':
+    if key == '1' and app.items[key] > 0:
         app.held = 1
-    elif key == '2':
+    elif key == '2' and app.items[key] > 0:
         app.held = 2
-    elif key == '3':
+    elif key == '3' and app.items[key] > 0:
         app.held = 3
-    elif key == '4':
+    elif key == '4' and app.items[key] > 0:
         app.held = 10
-    elif key == '5':
+    elif key == '5' and app.items[key] > 0:
         app.held = 11
-    elif key == '6':
+    elif key == '6' and app.items[key] > 0:
         app.held = 12
-    elif key == '7':
+    elif key == '7' and app.items[key] > 0:
         app.held = 13
-    elif key == '8':
+    elif key == '8' and app.items[key] > 0:
         app.held = 14
-    elif key == '9':
+    elif key == '9' and app.items[key] > 0:
         app.held = 15
-    elif key == '0':
+    elif key == '0' and app.items[key] > 0:
         app.held = 16
-    elif key == '-':
+    elif key == '-' and app.items[key] > 0:
         app.held = 17
-    elif key == '+':
+    elif key == '=' and app.items[key] > 0:
         app.held = 18
-    elif key == 'q':
+    elif key == 'q' and app.tools[key] in app.toolset:
         app.held = 5
-    elif key == 'w':
+    elif key == 'w' and app.tools[key] in app.toolset:
         app.held = 6
-    elif key == 'e':
+    elif key == 'e' and app.tools[key] in app.toolset:
         app.held = 7
     elif key == 'r':
         app.held = 8 #magic mirror
@@ -372,13 +402,18 @@ def inv_keypress(app, key):
 # once there are enough items, maybe i can flash the tool on the screen
 def crafting(app, key):
     if key == 'q' and 5 not in app.toolset:
-        if app.itemcounts[3] == 6: # if you have 6 stone
+        if app.itemcounts[3] >= 6: # if you have 6 stone
+            app.itemcounts[3] -= 6
             app.toolset.add(5) # add pickaxe
     if key == 'w' and 6 not in app.toolset:
-        if app.itemcounts[3] == 3 and app.itemcounts[12] == 6:
+        if app.itemcounts[3] >= 3 and app.itemcounts[12] >= 6:
+            app.itemcounts[3] -= 3
+            app.itemcounts[12] -= 6
             app.toolset.add(6)
     if key == 'e' and 7 not in app.toolset:
-        if app.itemcounts[3] == 3 and app.itemcounts[13] == 6:
+        if app.itemcounts[3] >= 3 and app.itemcounts[13] >= 6:
+            app.itemcounts[3] -= 3
+            app.itemcounts[13] -= 6
             app.toolset.add(7)
 
 def draw_tools_menu(app):
@@ -386,41 +421,97 @@ def draw_tools_menu(app):
         drawRect(25, 25 + 75 * i, 75, 75, fill = 'lightGrey', border = 'black', borderWidth = 2, opacity = 75)
     drawRect(25, 25, 75, 300, fill = None, border = 'black', borderWidth = 4)
     drawLabel('Q', 87.5, 87.5, bold = True)
+    drawLabel('W', 87.5, 162.5, bold = True)
+    drawLabel('E', 87.5, 237.5, bold = True)
     if 5 not in app.toolset:
         if app.itemcounts[3] < 6:
            drawLabel('need', 62.5, 50)
            drawLabel(f'{6 - app.itemcounts[3]} stone', 62.5, 62.5)
-        elif app.itemcounts[3] == 6:
+        elif app.itemcounts[3] >= 6:
             drawLabel('press Q', 62.5, 50)
             drawLabel('to craft', 62.5, 62.5)
     else:
         drawImage(app.IDtoImage[5], 37.5, 37.5, width = 50, height = 50)
-    drawLabel('W', 87.5, 162.5, bold = True)
-
-    drawLabel('E', 87.5, 237.5, bold = True)
-
-
+        if 6 not in app.toolset:
+            if app.itemcounts[3] < 3 or app.itemcounts[12] < 6:
+                drawLabel('need', 62.5, 125)
+                if app.itemcounts[12] < 6:
+                    drawLabel(f'{6 - app.itemcounts[12]} iron', 62.5, 137.5)
+                if app.itemcounts[3] < 3:
+                    drawLabel(f'{3 - app.itemcounts[3]} stone', 62.5, 150)
+            elif app.itemcounts[3] >= 3 and app.itemcounts[12] >= 6:
+                drawLabel('press W', 62.5, 125)
+                drawLabel('to craft', 62.5, 137.5)
+        else:
+            drawImage(app.IDtoImage[6], 37.5, 112.5, width = 50, height = 50)
+            if 7 not in app.toolset:
+                if app.itemcounts[3] < 3 or app.itemcounts[13] < 6:
+                    drawLabel('need', 62.5, 200)
+                    if app.itemcounts[12] < 6:
+                        drawLabel(f'{6 - app.itemcounts[13]} gold', 62.5, 212.5)
+                    if app.itemcounts[3] < 3:
+                        drawLabel(f'{3 - app.itemcounts[3]} stone', 62.5, 225)
+                elif app.itemcounts[3] >= 3 and app.itemcounts[13] >= 6:
+                    drawLabel('press E', 62.5, 200)
+                    drawLabel('to craft', 62.5, 212.5)
+            else:
+                drawImage(app.IDtoImage[7], 37.5, 200, width = 50, height = 24, rotateAngle = -45)
     drawImage(app.IDtoImage[8], 37.5, 262.5, width = 50, height = 50)
     drawLabel('R', 87.5, 312.5, bold = True)
     # draws the tools pane on the side/bottom/top with all of the tools (which are unlocked)
     # selected tool is a larger rectangle with text showing what it is
-    pass
 
 def draw_held(app):
-    drawRect(25, app.height - 125, 100, 100, fill = 'gold', border = 'black', borderWidth = 4, opacity = 75)
-    if app.held != None:
-        drawImage(app.IDtoImage[app.held], 37.5, app.height - 112.5, width = 75, height = 75)
+    drawRect((app.width // 2) - 50, app.height - 125, 100, 100, fill = 'gold', border = 'black', borderWidth = 4, opacity = 75)
+    if app.held != None and (app.held in app.toolset or app.held in app.itemcounts or app.held == 8):
+        if app.held != 7 and app.held in app.toolset: # is tool
+            drawLabel(app.IDtoname[app.held], app.width // 2, app.height - 137.5, size = 18, bold = True, fill = 'white')
+            drawImage(app.IDtoImage[app.held], (app.width // 2) - 37.5, app.height - 112.5, width = 75, height = 75)
+        if app.held in app.itemcounts and app.itemcounts[app.held] > 0: # is item, and you have item
+            drawLabel(app.IDtoname[app.held], app.width // 2, app.height - 137.5, size = 18, bold = True, fill = 'white')
+            drawImage(app.IDtoImage[app.held][0], (app.width // 2) - 37.5, app.height - 112.5, width = 75, height = 75)
+        if app.held == 7: # is drill (needs to be rotated)
+            drawLabel(app.IDtoname[app.held], app.width // 2, app.height - 137.5, size = 18, bold = True, fill = 'white')
+            drawImage(app.IDtoImage[7], (app.width // 2) - 37.5, app.height - 93.75, width = 1.1 * 75, height = 1.1 * 36, rotateAngle = -45)
 
 def draw_blocks_menu(app):
     # draws the inventory pane on the side/bottom/top with all of the blocks and their counts in it
     # selected block is a larger rectangle with text showing what it is
-    pass
+    drawRect(100, app.height - 100, 450, 75, fill = None, border = 'black', borderWidth = 4)
+    drawRect((app.width // 2) + 50, app.height - 100, 450, 75, fill = None, border = 'black', borderWidth = 4)
+    for i in range(6):
+        #draw grid left side
+        drawRect(100 + 75 * i, app.height - 100, 75, 75, fill = 'lightGrey', border = 'black', borderWidth = 2, opacity = 75)
+        #draw grid right side
+        drawRect((app.width // 2) + 50 + 75 * i, app.height - 100, 75, 75, fill = 'lightGrey', border = 'black', borderWidth = 2, opacity = 75)
+    for i in range(1, 4):
+        drawImage(app.IDtoImage[i][0], 37.5 + 75 * i, app.height - 87.5, width = 50, height = 50) # 1, 2, 3
+        drawLabel(app.itemcounts[i], 37.5 + 75 * i, app.height - 37.5, size = 14, bold = True)
+        drawImage(app.IDtoImage[i + 9][0], 262.5 + 75 * i, app.height - 87.5, width = 50, height = 50) # 10, 11, 12
+        drawLabel(app.itemcounts[i + 9], 262.5 + 75 * i, app.height - 37.5, size = 14, bold = True)
+        drawImage(app.IDtoImage[i + 12][0], 587.5 + 75 * i, app.height - 87.5, width = 50, height = 50) # 13, 14, 15
+        drawLabel(app.itemcounts[i + 12], 587.5 + 75 * i, app.height - 37.5, size = 14, bold = True)
+        drawImage(app.IDtoImage[i + 15][0], 812.5 + 75 * i, app.height - 87.5, width = 50, height = 50) # 16, 17, 18
+        drawLabel(app.itemcounts[i + 15], 812.5 + 75 * i, app.height - 37.5, size = 14, bold = True)
+        drawLabel(f'{i + 6}', 637.5 + 75 * i, app.height - 37.5, size = 14, bold = True) # keys 7-9
+    for i in range(6):
+        drawLabel(f'{i + 1}', 162.5 + 75 * i, app.height - 37.5, size = 14, bold = True) #keys 1-6
+    drawLabel('0', 937.5, app.height - 37.5, size = 14, bold = True)
+    drawLabel('-', 1012.5, app.height - 35, size = 14, bold = True)
+    drawLabel('=', 1087.5, app.height - 37.5, size = 14, bold = True)
 
-def draw_tile(app, tile, i, j):
+def draw_tile(app, tileID, tvar, i, j):
     x = (i - app.camx) * tilesize + app.width // 2
     y = (j - app.camy) * tilesize + app.height // 2
-    if tile != 0:
-        drawRect(x, y, tilesize, tilesize, fill = rgb(*app.tile_dict[tile]))
+    if tileID != 0:
+        if tileID == 4:
+            drawRect(x, y, tilesize, tilesize, fill = rgb(0, 0, 0))
+        else:
+            if not app.fastmode:
+                drawImage(app.IDtoImage[tileID][tvar], x, y, width = tilesize, height = tilesize)
+            else:
+                drawRect(x, y, tilesize, tilesize, fill = rgb(*app.tile_dict[tileID]))
+
 
 def draw_game(app):
     tiles_onscreen_x = app.width // tilesize
@@ -432,11 +523,12 @@ def draw_game(app):
     for i in range(start_x, end_x):
         for j in range(start_y, end_y):
             if (0 <= i < worldcols) and (0 <= j < worldrows):
-                tile = app.world[i][j]
-                if tile != 0:
-                    draw_tile(app, tile, i, j)
+                tvar = int(app.texturevariants[i][j])
+                tileID = app.world[i][j]
+                if tileID != 0:
+                    draw_tile(app, tileID, tvar, i, j)
             elif (0 <= j < worldrows):
-                draw_tile(app, 0, i, j) #draw white over out of bounds tiles to prevent smearing
+                draw_tile(app, 0, tvar, i, j) #draw white over out of bounds tiles to prevent smearing
 
 ######################################
 # general MVC functions for the game #
@@ -458,6 +550,7 @@ def redrawAll(app):
         drawRect(screen_x, screen_y, app.pw, app.ph, fill = 'blue') #draw player
         draw_tools_menu(app)
         draw_held(app)
+        draw_blocks_menu(app)
 
 def onMousePress(app, mouseX, mouseY):
     if app.gamestate == 'title':
