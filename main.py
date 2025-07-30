@@ -528,6 +528,7 @@ def draw_game(app):
                 if tileID != 0:
                     draw_tile(app, tileID, tvar, i, j)
             elif (0 <= j < worldrows):
+                tvar = None
                 draw_tile(app, 0, tvar, i, j) #draw white over out of bounds tiles to prevent smearing
 
 ######################################
