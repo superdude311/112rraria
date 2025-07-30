@@ -545,8 +545,8 @@ def redrawAll(app):
         screen_x = (app.px - app.camx * tilesize) + app.width  // 2
         screen_y = (app.py - app.camy * tilesize) + app.height // 2
         if app.debug:
-            drawLabel(f"(x, y) coordinate: {(app.px, app.py)}", 100, 35)
-            drawLabel(f"(x, y) velocity: {(app.vx, app.vy)}", 100, 55)
+            drawLabel(f"(x, y) coordinate: {(app.px, app.py)}", app.width - 100, 35)
+            drawLabel(f"(x, y) velocity: {(app.vx, app.vy)}", app.width - 100, 55)
         drawRect(screen_x, screen_y, app.pw, app.ph, fill = 'blue') #draw player
         draw_tools_menu(app)
         draw_held(app)
