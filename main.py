@@ -256,7 +256,7 @@ def break_check(app, tiletype):
             return True  
         return False    
     if app.held == 7:
-        if tiletype <= 12 and tiletype != 4:
+        if tiletype <= 18 and tiletype != 4:
             return True  
         return False
 # if item in hand is tool, and item in hand can break block, break block
@@ -268,6 +268,7 @@ def click_block(app, mouse_x, mouse_y):
     tilecol = int(app.camx + tile_offset_x)
     tilerow = int(app.camy + tile_offset_y)
     if 0 <= tilecol < worldcols and 0 <= tilerow < worldrows:
+        print(app.toolset)
         if app.held in app.toolset and app.world[tilecol][tilerow] != 0:
             if break_check(app, app.world[tilecol][tilerow]):
                 tiletype = app.world[tilecol][tilerow]
