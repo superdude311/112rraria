@@ -1,6 +1,8 @@
 # 112rraria
 My 15-112 Term Project, a Python-based sandbox game inspired by Terraria
 
+To Run: Download all files + run main.py
+
 ### Notes: 
 
 A guide on how to play is written under the options button. I was going to have actual options, but I ran out of ideas on what to implement there. 
