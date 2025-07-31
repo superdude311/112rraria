@@ -15,6 +15,7 @@
 from cmu_graphics import *
 from worldsetup import *
 from worldgen import *
+import time
 
 '''
 toolIDs:
@@ -30,8 +31,8 @@ Unbreakable: 4: barrier
 
 # initialize variables n things 
 def onAppStart(app):
+    app.last_fps_time = time.time()
     app.setMaxShapeCount(20000)
-    app.step = 0
     app.gamestate = gamestate
     app.stepsPerSecond = 60
     init_titlescreen(app) #initialize titlescreen variables
@@ -99,6 +100,8 @@ def init_gamevars(app):
     app.bgimg = 'game-bg-img.png'
     app.debug = False
     app.fastmode = False
+    app.fps = 0
+    app.framecount = 0
     #ItemID to image path dict
     #dear god, make the pain stop
     app.IDtoImage = {1:['sprites/grass0.png', 'sprites/grass1.png', 'sprites/grass2.png'],
@@ -549,6 +552,7 @@ def redrawAll(app):
         if app.debug:
             drawLabel(f"(x, y) coordinate: {(app.px, app.py)}", app.width - 100, 35)
             drawLabel(f"(x, y) velocity: {(app.vx, app.vy)}", app.width - 100, 55)
+            drawLabel(f"FPS: {app.fps}", app.width - 100, 75)
         drawRect(screen_x, screen_y, app.pw, app.ph, fill = 'blue') #draw player
         draw_tools_menu(app)
         draw_held(app)
@@ -586,10 +590,14 @@ def onMouseMove(app, mouseX, mouseY):
         pass
 
 def onStep(app):
-    app.step += 1
     if app.gamestate == 'game':
         movement_step(app)
         app.camx = app.px // tilesize
         app.camy = app.py // tilesize
+        app.framecount += 1
+        if time.time() >= app.last_fps_time + 1:
+            app.fps = app.framecount
+            app.framecount = 0
+            app.last_fps_time = time.time()
 
 runApp(width = 1200, height = 800)
